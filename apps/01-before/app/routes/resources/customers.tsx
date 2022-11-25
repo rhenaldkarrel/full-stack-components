@@ -1,5 +1,6 @@
 import type { LoaderArgs } from '@remix-run/node';
 import { json } from '@remix-run/node';
+import { useFetcher } from '@remix-run/react';
 import clsx from 'clsx';
 import { useCombobox } from 'downshift';
 import { useId, useState } from 'react';
@@ -19,6 +20,7 @@ export async function loader({ request }: LoaderArgs) {
 }
 
 export function CustomerCombobox({ error }: { error?: string | null}) {
+  const customerFetcher = useFetcher<typeof loader>();
   const id = useId();
   const customers: any[] = [];
   type Customer = typeof customers[number];
@@ -32,8 +34,11 @@ export function CustomerCombobox({ error }: { error?: string | null}) {
     items: customers,
     itemToString: item => (item ? item.name : ''),
     onInputValueChange: changes => {
-
-    }
+      customerFetcher.submit(
+        { query: changes.inputValue },
+        { method: 'get', action: '/resources/customers'}
+      );
+    },
   })
 
   const displayMenu = cb.isOpen && customers.length > 0;
