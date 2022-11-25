@@ -4,6 +4,7 @@ import { useFetcher } from '@remix-run/react';
 import clsx from 'clsx';
 import { useCombobox } from 'downshift';
 import { useId, useState } from 'react';
+import { useSpinDelay } from 'spin-delay';
 import invariant from 'tiny-invariant';
 import { LabelText } from '~/components';
 import { searchCustomers } from '~/models/customer.server';
@@ -13,6 +14,7 @@ export async function loader({ request }: LoaderArgs) {
   await requireUser(request);
   const url = new URL(request.url);
   const query = url.searchParams.get('query');
+  await new Promise(r => setTimeout(r, 30));
   invariant(typeof query === 'string', 'query is required')
   return json({
     customers: await searchCustomers(query),
@@ -22,7 +24,7 @@ export async function loader({ request }: LoaderArgs) {
 export function CustomerCombobox({ error }: { error?: string | null}) {
   const customerFetcher = useFetcher<typeof loader>();
   const id = useId();
-  const customers: any[] = [];
+  const customers = customerFetcher.data?.customers ?? [];
   type Customer = typeof customers[number];
   const [selectedCustomer, setSelectedCustomer] = useState<null | undefined | Customer>(null);
 
@@ -41,7 +43,11 @@ export function CustomerCombobox({ error }: { error?: string | null}) {
     },
   })
 
-  const showSpinner = customerFetcher.state !== 'idle';
+  const busy = customerFetcher.state !== 'idle';
+  const showSpinner = useSpinDelay(busy, {
+    delay: 150,
+    minDuration: 500,
+  });
   const displayMenu = cb.isOpen && customers.length > 0;
 
   return (
